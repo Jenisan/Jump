@@ -6,10 +6,10 @@ You play Pip, a jumper in an orange cap and yellow scarf. Run and leap through t
 
 ## Gameplay
 - **Hearts and lives.** You have 3 hearts (up to 6 with upgrades) and 3 extra lives. Enemies and spikes cost a heart; pits and running out of time cost a life. Extra life every 20,000 points.
-- **Stomp** most enemies from above; chained stomps without touching the ground score more. Burrs are spiky and must be shot.
+- **Stomp** most enemies from above; chained stomps without touching the ground score more. Sawblades can't be stomped and must be shot.
 - **Crates (?)** give coins, items, ammo or a new weapon. Bricks break when you bump them from below.
 - **Checkpoint** flag halfway through each level; the **beacon** pole at the end: the higher you grab it, the bigger the bonus, then leftover time is counted into your score.
-- **Enemies:** beetles, hoppers, bats, burrs, sentries (stone turrets) and, in the caverns, crushers that drop from the ceiling.
+- **Enemies:** scrap crawlers, spring bots, soot drones, sawblades, steam turrets and, in the Undercity, hydraulic crushers that drop from the ceiling.
 
 ## Weapons (Q / E to switch)
 | Weapon | How it works |
@@ -45,8 +45,8 @@ Coins are banked when a run ends and spent between runs: Big Heart, Spring Boots
 - `ui.webp` (`UIR`) and `ui-panel.webp`, `ui-hazard.webp`, `ui-card.webp`, `ui-card-on.webp`, `ui-btn.webp`: cut from the supplied UI sheet. Panels and cards are 9-slice frames; the HUD uses the heart, coin stack, rust plate (weapon), square plates (bag slots), the gauge bar (time; its channel `BAR_CH` is repainted and filled live) and hazard stripes (banners). Live numbers are always drawn on top.
 - `splash.jpg`: key art for the arcade hub card, rendered from the game with `?splash`.
 - `soundtrack.mp3`: chiptune loop, levelled to −14 LUFS like every arcade track.
-- Player, enemies, pickups and projectiles are drawn in code.
-Version in `VERSION`; bump .01 per shipped build (0.10 first, 0.11 painted UI, tiles and background).
+- Player, enemies, pickups and projectiles are drawn in code in the same gritty style (dark outlines, rust and steel shading): Pip the steelworker (hard hat, goggles, red bandana, work jacket, tool belt); scrap crawlers, spring bots, soot drones, sawblades (spiky: shoot them) and steam turrets; hydraulic crushers; brass gear coins; hex-nut sling shots.
+Version in `VERSION`; bump .01 per shipped build (0.10 first, 0.11 painted UI, tiles and background, 0.12 industrial characters).
 
 ## Code map
 - `genLevel()`: builds a level from weighted segments (pits, steps, block rows, planks, moving platforms, pillars, spikes, crushers, sentry towers). Tiles: 0 air, 1 ground, 2 brick, 3 crate, 4 used crate, 5 stone, 6 one-way plank, 7 spikes. The attract mode uses pit-free levels.
