@@ -46,7 +46,7 @@ Coins are banked when a run ends and spent between runs: Big Heart, Spring Boots
 - `splash.jpg`: key art for the arcade hub card, rendered from the game with `?splash`.
 - `soundtrack.mp3`: chiptune loop, levelled to −14 LUFS like every arcade track.
 - Player, enemies, pickups and projectiles are drawn in code in the same gritty style (dark outlines, rust and steel shading): Pip the steelworker (hard hat, goggles, red bandana, work jacket, tool belt); scrap crawlers, spring bots, soot drones, sawblades (spiky: shoot them) and steam turrets; hydraulic crushers; brass gear coins; hex-nut sling shots.
-Version in `VERSION`; bump .01 per shipped build (0.10 first, 0.11 painted UI, tiles and background, 0.12 industrial characters).
+Version in `VERSION`; bump .01 per shipped build (0.10 first, 0.11 painted UI, tiles and background, 0.12 industrial characters, 0.13 glowing coins with a pickup burst and coins that fly to the HUD counter).
 
 ## Code map
 - `genLevel()`: builds a level from weighted segments (pits, steps, block rows, planks, moving platforms, pillars, spikes, crushers, sentry towers). Tiles: 0 air, 1 ground, 2 brick, 3 crate, 4 used crate, 5 stone, 6 one-way plank, 7 spikes. The attract mode uses pit-free levels.
