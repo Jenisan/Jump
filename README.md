@@ -2,7 +2,7 @@
 
 A side-scrolling platformer for the Jenisan Arcade, built on the classic run-and-jump formula (all characters and art are original). Play at **arcade.jenisan.com/jump/** (or jump.jenisan.com).
 
-You play Pip, a jumper in an orange cap and yellow scarf. Run and leap through three worlds (Sunny Meadow, Crystal Caverns, Sunset Skyway), three levels each, then the loop repeats harder. Every run generates fresh levels.
+You play Pip, a jumper in an orange cap and yellow scarf. Run and leap through three worlds (The Outskirts, The Undercity, The Foundry), three levels each, then the loop repeats harder. Every run generates fresh levels.
 
 ## Gameplay
 - **Hearts and lives.** You have 3 hearts (up to 6 with upgrades) and 3 extra lives. Enemies and spikes cost a heart; pits and running out of time cost a life. Extra life every 20,000 points.
@@ -39,7 +39,14 @@ Coins are banked when a run ends and spent between runs: Big Heart, Spring Boots
 - **Phones and tablets** (landscape only): ◀ ▶ ▼ on the left; JUMP, FIRE, ⟳ (next weapon) and ITEM on the right.
 
 ## Files
-Single `index.html`, plus `splash.jpg` (key art for the arcade hub card, rendered from the game with `?splash`) and `soundtrack.mp3` (chiptune loop, levelled to −14 LUFS like every arcade track). All game art is drawn in code. Version in `VERSION` (0.10 first); bump .01 per shipped build.
+- `index.html`: the whole game.
+- `tiles.webp`: block tiles cut from the supplied block sheet (64 px cells; table `THEMES[].tile` and `TC`; last cell is the plank strip). Each world has its own top, fill, brick and stone tiles; crates are the hazard panel with a live "?".
+- `bg.jpg`: the supplied factory skyline, mirrored into a seamless strip; The Outskirts uses it as is, The Foundry tints it fire orange. The Undercity's cavern is drawn in code.
+- `ui.webp` (`UIR`) and `ui-panel.webp`, `ui-hazard.webp`, `ui-card.webp`, `ui-card-on.webp`, `ui-btn.webp`: cut from the supplied UI sheet. Panels and cards are 9-slice frames; the HUD uses the heart, coin stack, rust plate (weapon), square plates (bag slots), the gauge bar (time; its channel `BAR_CH` is repainted and filled live) and hazard stripes (banners). Live numbers are always drawn on top.
+- `splash.jpg`: key art for the arcade hub card, rendered from the game with `?splash`.
+- `soundtrack.mp3`: chiptune loop, levelled to −14 LUFS like every arcade track.
+- Player, enemies, pickups and projectiles are drawn in code.
+Version in `VERSION`; bump .01 per shipped build (0.10 first, 0.11 painted UI, tiles and background).
 
 ## Code map
 - `genLevel()`: builds a level from weighted segments (pits, steps, block rows, planks, moving platforms, pillars, spikes, crushers, sentry towers). Tiles: 0 air, 1 ground, 2 brick, 3 crate, 4 used crate, 5 stone, 6 one-way plank, 7 spikes. The attract mode uses pit-free levels.
