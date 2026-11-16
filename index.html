@@ -122,7 +122,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.27';
+const VERSION='0.28';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -273,8 +273,8 @@ function genLevel(n,seed,thi,demo){
     if(k===last&&(k==='pit'||k==='mover'||k==='platforms'))k='flat';last=k;SEG[k]()}
   if(!crates){ground(x,6,g);set(x+2,g-4,3);x+=6}
   // boss arena: a gate column at `arena` slams shut behind you; the exit door (`goal`) unlocks when the boss is down
-  ground(x,30,g);const arena=x+3,goal=x+26;
-  const w=x+30,t=new Uint8Array(w*ROWS);
+  ground(x,34,g);const arena=x+3,goal=x+26;
+  const w=x+34,t=new Uint8Array(w*ROWS);
   for(let y=0;y<ROWS;y++)for(let i=0;i<w;i++)t[y*w+i]=tiles[y*cap+i];
   if(th.ceil){const crushX=new Set(ents.filter(e=>e.k==='crush').flatMap(e=>[e.tx,e.tx+1]));
     for(let i=0;i<w;i++){for(let y=0;y<ceil;y++)t[y*w+i]=1;if(!crushX.has(i)&&R()<.18)t[ceil*w+i]=1}}
@@ -536,7 +536,7 @@ function drawBeam(){const b=G.beam;if(!b)return;const fl=.75+.25*Math.sin(t*60);
   const g=ctx.createRadialGradient(b.x1,b.y0,1,b.x1,b.y0,12);g.addColorStop(0,'rgba(255,240,220,.95)');g.addColorStop(1,'rgba(255,60,40,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x1,b.y0,12*fl,0,TAU);ctx.fill();
   const g2=ctx.createRadialGradient(b.x0,b.y0,1,b.x0,b.y0,7);g2.addColorStop(0,'rgba(255,220,210,.9)');g2.addColorStop(1,'rgba(255,60,40,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.arc(b.x0,b.y0,7,0,TAU);ctx.fill();ctx.restore()}
 // jet pack on Pip's back (behind the sprite), with a flame while it's burning
-function drawJetpack(p){if(!G.gear||!G.gear.back||p.st==='dead')return;const f=p.face,x=p.x-f*8,y=p.y-24,turbo=G.gear.back==='turbo';
+function drawJetpack(p){if(!G.gear||!G.gear.back||p.st==='dead'||(p.st==='goal'&&p.x>=L.goal*T+T/2-1&&G.pt>1))return;const f=p.face,x=p.x-f*8,y=p.y-24,turbo=G.gear.back==='turbo';
   if(p.jetting){ctx.save();ctx.globalCompositeOperation='lighter';for(const dx of [-2.5,2.5]){const L=10+Math.random()*8,g=ctx.createLinearGradient(0,y+12,0,y+12+L);g.addColorStop(0,'rgba(255,250,200,.95)');g.addColorStop(.4,'rgba(255,150,40,.8)');g.addColorStop(1,'rgba(255,60,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x+dx-2.4,y+12);ctx.lineTo(x+dx+2.4,y+12);ctx.lineTo(x+dx,y+12+L);ctx.fill()}ctx.restore()}
   for(const dx of [-2.5,2.5]){shape(lg(y,y+12,turbo?'#ff9a3d':'#a7adb3',turbo?'#a8461a':'#4f555b'),()=>{rr(ctx,x+dx-2.4,y,4.8,12,2.2)},1);ctx.fillStyle='#2a2522';ctx.fillRect(x+dx-1.6,y+11,3.2,2)}
   ctx.fillStyle='#3a332e';ctx.fillRect(x-4,y+4,8,2)}
@@ -858,7 +858,7 @@ function update(dt){
     G.tick=(G.tick||0)+dt;if(G.tick>=1){G.tick-=1;G.time--;if(G.time===60&&!G.hurry){G.hurry=true;sfx.hurry();setMsg('Hurry',1.6,'60 seconds left',true)}if(G.time<=0){G.time=0;die('time');return}}}
   updatePlayer(dt);updateEnemies(dt);updateCrushers(dt);updateProjectiles(dt);updatePickups(dt);updateCam(dt)}
 function updateCam(dt){const p=PL;let tx=clamp(p.x-VIEWW*.38+p.face*30,0,Math.max(0,L.w*T-VIEWW));
-  if(G.bossOn||G.bossDead){const a=L.arena*T,b=(L.goal+2)*T;tx=b-a<=VIEWW?clamp((a+b)/2-VIEWW/2,0,Math.max(0,L.w*T-VIEWW)):clamp(p.x-VIEWW*.5,a,b-VIEWW)}
+  if(G.bossOn||G.bossDead){const a=L.arena*T,b=L.w*T;tx=b-a<=VIEWW?clamp((a+b)/2-VIEWW/2,0,Math.max(0,L.w*T-VIEWW)):clamp(p.x-VIEWW*.5,a,b-VIEWW)}
  camX+=(tx-camX)*Math.min(1,dt*6)}
 function loseLife(){G.lives--;if(G.lives<0){gameOver();return}loadLevel(true)}
 function updateFx(dt){
@@ -1081,14 +1081,28 @@ function drawCheckpoint(x,y){if(anOK){const on=G.cpHit,k=72/ANR.flag0[6];if(on&&
   ctx.fillStyle='#2a2420';ctx.fillRect(x-9,y-6,18,6);const on=G.cpHit,fl=Math.sin(t*6)*2;
   shape(on?'#ff7a1a':'#7a6f66',()=>{ctx.moveTo(x+3,y-64);ctx.lineTo(x+28,y-57+fl);ctx.lineTo(x+3,y-48)});
   ctx.fillStyle=on?`rgba(255,150,60,${.35+.25*Math.sin(t*5)})`:'rgba(255,255,255,.1)';ctx.beginPath();ctx.arc(x,y-70,on?10:5,0,TAU);ctx.fill();ctx.fillStyle=on?'#ffd27a':'#8a8178';ctx.beginPath();ctx.arc(x,y-70,4,0,TAU);ctx.fill()}
-function drawBeacon(){// the level exit: a locked door at the far end of the boss arena
+// exit.webp: the end-of-level building (two designs, alternating by level). EXR: atlas rect, door rect + leaf split (atlas px), roof lights
+const EXR={"exa":{"r":[0,0,705,421],"door":[260.6,193.0,180.0,170.6],"split":350.6,"lights":[[259.2,50.4],[444.2,50.4]]},"exb":{"r":[707,0,801,420],"door":[163.5,187.1,152.5,170.6],"split":239.7,"lights":[[106.1,48.7],[200.4,48.7]]}};
+const XIMG=new Image();let exOK=false;XIMG.onload=()=>exOK=true;XIMG.src='exit.webp';
+function drawBeacon(){// the level exit: the building's double door unlocks and slides open once the boss is down
   const gx=L.goal*T+T/2,gy=L.goalY*T;
+  if(exOK){const E=EXR[(G.n||0)%2?'exb':'exa'],R=E.r,D=E.door,k=62/D[3],ox=gx-(D[0]+D[2]/2)*k,oy=gy-(D[1]+D[3])*k;
+    const open=G.demo||!L.arena?1:G.bossDead||G.phase==='goal'?clamp((t-(G.doorT||t-9))/1.1,0,1):0,o=open*open*(3-2*open);
+    ctx.drawImage(XIMG,R[0],R[1],R[2],R[3],ox,oy,R[2]*k,R[3]*k);
+    const dx=ox+D[0]*k,dy=oy+D[1]*k,dw=D[2]*k,dh=D[3]*k,sx=ox+E.split*k;
+    if(o>0){ctx.save();ctx.beginPath();ctx.rect(dx,dy,dw,dh);ctx.clip();
+      const g=ctx.createLinearGradient(0,dy,0,dy+dh);g.addColorStop(0,'#1a0f0a');g.addColorStop(.6,'#4a2412');g.addColorStop(1,'#c8621e');ctx.fillStyle=g;ctx.fillRect(dx,dy,dw,dh);
+      ctx.globalCompositeOperation='lighter';const g2=ctx.createRadialGradient(dx+dw/2,dy+dh,4,dx+dw/2,dy+dh,dh);g2.addColorStop(0,`rgba(255,170,70,${.55*o})`);g2.addColorStop(1,'rgba(255,120,30,0)');ctx.fillStyle=g2;ctx.fillRect(dx,dy,dw,dh);ctx.globalCompositeOperation='source-over';
+      const lw=sx-dx,rw=dx+dw-sx;   // the two leaves slide apart into the wall
+      ctx.drawImage(XIMG,R[0]+D[0],R[1]+D[1],E.split-D[0],D[3],dx-o*lw*.96,dy,lw,dh);
+      ctx.drawImage(XIMG,R[0]+E.split,R[1]+D[1],D[0]+D[2]-E.split,D[3],sx+o*rw*.96,dy,rw,dh);ctx.restore()}
+    // roof beacons: fast amber flash while locked, steady glow once open
+    const fl=o>0?.6+.15*Math.sin(t*3):(Math.floor(t*3)%2?1:.25);ctx.save();ctx.globalCompositeOperation='lighter';
+    for(const [lx,ly] of E.lights){const x=ox+lx*k,y=oy+ly*k,g=ctx.createRadialGradient(x,y,1,x,y,26);g.addColorStop(0,o>0?`rgba(255,200,90,${.6*fl})`:`rgba(255,110,30,${.7*fl})`);g.addColorStop(1,'rgba(255,80,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,26,0,TAU);ctx.fill()}
+    ctx.restore();return}
   if(anOK){const dk=100/ANR.door0[6],dw=ANR.door0[7]*dk;let dn='door0';
-    if(G.demo||!L.arena)dn='door3';
-    else if(G.phase==='goal')dn='door3';
-    else if(G.bossDead)dn=t-(G.doorT||0)<.35?'door1':t-(G.doorT||0)<.8?'door2':'door3';
-    if(dn==='door3'){ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(gx,gy-40,4,gx,gy-40,70);g.addColorStop(0,`rgba(255,160,60,${.25+.1*Math.sin(t*3)})`);g.addColorStop(1,'rgba(255,120,30,0)');ctx.fillStyle=g;ctx.fillRect(gx-70,gy-110,140,110);ctx.globalCompositeOperation='source-over'}
-    anmK(ctx,dn,gx-dw/2,gy,dk);if(dn==='door0'){const b=.5+.5*Math.sin(t*4);ctx.fillStyle=`rgba(255,40,30,${.35*b})`;ctx.beginPath();ctx.arc(gx+dw*.36,gy-56,4,0,TAU);ctx.fill()}return}
+    if(G.demo||!L.arena)dn='door3';else if(G.phase==='goal')dn='door3';else if(G.bossDead)dn=t-(G.doorT||0)<.35?'door1':t-(G.doorT||0)<.8?'door2':'door3';
+    anmK(ctx,dn,gx-dw/2,gy,dk);return}
   shape(lg(gy-96,gy,'#5b4a40','#3a2e27'),()=>{ctx.rect(gx-36,gy-92,72,92)});ctx.fillStyle=G.bossDead||G.demo?'#120d0a':'#3a2e27';ctx.fillRect(gx-17,gy-46,34,46)}
 // the boss: a hulking rusted foundry machine (body tint per theme), drawn in code in the gritty style
 function drawBoss(e){if(e.st==='gone')return;if(bsOK&&e.type&&drawBossArt(e))return;const th=e.th||0,C=[['#7a6252','#3e3129','#b8752a'],['#566270','#2b333c','#7fb0c8'],['#7a4436','#3a1d16','#ff7a2a']][th];
@@ -1274,7 +1288,8 @@ function drawProj(q){ctx.save();ctx.translate(q.x,q.y);
     const g=ctx.createRadialGradient(0,0,1,0,0,8);g.addColorStop(0,'#ffe6a0');g.addColorStop(.5,'#ff6a1a');g.addColorStop(1,'rgba(200,40,10,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,8,0,TAU);ctx.fill()}
   ctx.restore()}
 // Pip, a steelworker: dented hard hat, welding goggles, red bandana, canvas work jacket with a hi-vis band, tool belt, steel-toe boots
-function drawPlayer(p){if(sprOK){drawPlayerSprite(p);return}if(p.inv>0&&p.st==='ok'&&Math.floor(p.inv*14)%2)return;const x=p.x,y=p.y,f=p.face,air=!p.ground&&p.st==='ok';
+function drawPlayer(p){if(p.st==='goal'&&p.x>=L.goal*T+T/2-1&&G.pt>1){ctx.save();ctx.globalAlpha=clamp(1-(G.pt-1)/.5,0,1);if(ctx.globalAlpha>0){if(sprOK)drawPlayerSprite(p)}ctx.restore();return}
+  if(sprOK){drawPlayerSprite(p);return}if(p.inv>0&&p.st==='ok'&&Math.floor(p.inv*14)%2)return;const x=p.x,y=p.y,f=p.face,air=!p.ground&&p.st==='ok';
   ctx.save();ctx.translate(x,y);if(p.st==='dead'){ctx.rotate(Math.min(G.pt*6,Math.PI))}
   const sq=p.squash*.12;ctx.scale(f*(1+sq)*.8,(1-sq)*.8);ctx.lineJoin='round';ctx.lineCap='round';
   const pep=G.fx&&G.fx.pepper>0;if(pep){const g=ctx.createRadialGradient(0,-16,4,0,-16,24);g.addColorStop(0,`rgba(255,140,40,${.45+.2*Math.sin(t*20)})`);g.addColorStop(1,'rgba(255,80,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,-16,24,0,TAU);ctx.fill()}
