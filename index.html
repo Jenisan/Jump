@@ -119,7 +119,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.14';
+const VERSION='0.16';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -183,7 +183,7 @@ const THEMES=[
 // block tiles cut from the supplied block sheet (64 px cells in tiles.webp; last cell = plank strip)
 const BGIMG=new Image();let bgOK=false;BGIMG.onload=()=>bgOK=true;BGIMG.src='bg.jpg';   // supplied factory skyline, mirrored into a seamless strip
 // painted enemy sprites (sprites.webp): [x,y,w,h,anchorX,anchorY] in atlas pixels; anchor = feet (centre for tumbling frames)
-const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71]};
+const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71],"dr0":[1251,0,130,168,65,104.2],"dr1":[1383,0,128,169,64,104.8],"drs":[1513,0,125,152,62.5,94.2],"saw":[1640,0,168,168,84,84]};
 const SPIMG=new Image();let sprOK=false;SPIMG.onload=()=>sprOK=true;SPIMG.src='sprites.webp';
 function spr(n,k){const r=SPRR[n];ctx.drawImage(SPIMG,r[0],r[1],r[2],r[3],-r[4]*k,-r[5]*k,r[2]*k,r[3]*k)}
 const TIMG=new Image();let tilesOK=false;TIMG.onload=()=>tilesOK=true;TIMG.src='tiles.webp';
@@ -887,6 +887,20 @@ function drawEnemy(e){const x=e.x,y=e.y,f=e.face||-1;
     if(e.st==='squash'){ctx.scale(f,1);ctx.globalAlpha=clamp(1-(e.t-.25)/.2,0,1);spr('csq',k)}
     else if(e.st==='flip'){ctx.translate(0,-12);ctx.rotate(Math.sin(e.t*6)*.4);spr('cfl',k)}
     else{ctx.scale(f,1);spr('cw'+(Math.floor(e.t*9)%5),k)}
+    ctx.restore();return}
+  if(e.k==='burr'&&sprOK){// painted sawblade: one disc, spun as it rolls
+    ctx.save();ctx.translate(x,y-13);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);const k=32/168;
+    if(e.st==='flip'){ctx.rotate(e.t*5);ctx.globalAlpha=clamp(1-e.t/.9,0,1)}else ctx.rotate(e.x/15+t*4*(e.face||1));
+    spr('saw',k);ctx.restore();
+    if(e.st==='ok'&&Math.random()<.3)FX.push({k:'gp',x:e.x-(e.face||1)*rand(4,10),y:e.y-1,vx:-(e.face||1)*rand(40,140),vy:-rand(60,200),life:rand(.2,.4),r:rand(.8,1.6)});
+    return}
+  if(e.k==='bat'&&sprOK){// painted soot drone: 2-frame rotor hover, parked with the rotor stopped
+    ctx.save();ctx.translate(x,y-9);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);const k=40/130;
+    if(e.st==='flip'){ctx.rotate(e.t*7);spr('dr0',k)}
+    else if(e.st==='squash'){ctx.scale(f*1.15,.55);ctx.globalAlpha=clamp(1-(e.t-.2)/.25,0,1);spr('dr0',k)}
+    else{ctx.scale(f,1);if(e.awake){ctx.rotate(clamp(f*(e.vx||0)*.002,-.15,.15)+Math.sin(e.t*5)*.05);spr(Math.floor(t*16+e.x)%2?'dr1':'dr0',k);
+      ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(14,0,1,14,0,10);g.addColorStop(0,`rgba(255,60,30,${.5+.3*Math.sin(t*8)})`);g.addColorStop(1,'rgba(255,40,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(14,0,10,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over'}
+    else spr('drs',k)}
     ctx.restore();return}
   ctx.save();ctx.translate(x,y);
   if(e.st==='flip'){ctx.rotate(e.t*8);ctx.scale(1,-1);ctx.translate(0,e.h/2)}
