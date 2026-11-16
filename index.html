@@ -119,7 +119,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.18';
+const VERSION='0.19';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -183,7 +183,7 @@ const THEMES=[
 // block tiles cut from the supplied block sheet (64 px cells in tiles.webp; last cell = plank strip)
 const BGIMG=new Image();let bgOK=false;BGIMG.onload=()=>bgOK=true;BGIMG.src='bg.jpg';   // supplied factory skyline, mirrored into a seamless strip
 // painted enemy sprites (sprites.webp): [x,y,w,h,anchorX,anchorY] in atlas pixels; anchor = feet (centre for tumbling frames)
-const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71],"dr0":[1251,0,130,168,65,104.2],"dr1":[1383,0,128,169,64,104.8],"drs":[1513,0,125,152,62.5,94.2],"saw":[1640,0,168,168,84,84],"tu0":[1810,0,149,134,67,134],"tuc":[1961,0,148,141,67,141],"tuf":[2111,0,213,129,67,129],"tud":[2326,0,180,133,67,133],"tux":[2508,0,164,118,67,118],"crA":[2674,0,181,148,90.5,148],"crB":[2857,0,185,143,92.5,143],"rod":[3044,0,46,104,23,0],"flange":[3092,0,70,31,35,0],"csp":[3164,0,163,142,81.5,142],"czp":[3329,0,182,158,91,158],"cwr":[3513,0,171,138,85.5,138]};
+const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71],"dr0":[1251,0,130,168,65,104.2],"dr1":[1383,0,128,169,64,104.8],"drs":[1513,0,125,152,62.5,94.2],"saw":[1640,0,168,168,84,84],"tu0":[1810,0,149,134,67,134],"tuc":[1961,0,148,141,67,141],"tuf":[2111,0,213,129,67,129],"tud":[2326,0,180,133,67,133],"tux":[2508,0,164,118,67,118],"crA":[2674,0,181,148,90.5,148],"crB":[2857,0,185,143,92.5,143],"rod":[3044,0,46,104,23,0],"flange":[3092,0,70,31,35,0],"csp":[3164,0,163,142,81.5,142],"czp":[3329,0,182,158,91,158],"cwr":[3513,0,171,138,85.5,138],"p0":[3686,0,67,130,33.5,130],"pr0":[3755,0,96,123,52.8,123],"pr1":[3853,0,99,121,54.5,121],"pr2":[3954,0,98,126,53.9,126],"pr3":[4054,0,86,126,47.3,126],"pj":[4142,0,81,142,34,142],"pf":[4225,0,110,99,55,99],"ps":[4337,0,109,132,32.7,132],"ph":[4448,0,82,129,34.4,129],"pd":[4532,0,132,43,66,43]};
 const SPIMG=new Image();let sprOK=false;SPIMG.onload=()=>sprOK=true;SPIMG.src='sprites.webp';
 function spr(n,k){const r=SPRR[n];ctx.drawImage(SPIMG,r[0],r[1],r[2],r[3],-r[4]*k,-r[5]*k,r[2]*k,r[3]*k)}
 const TIMG=new Image();let tilesOK=false;TIMG.onload=()=>tilesOK=true;TIMG.src='tiles.webp';
@@ -425,7 +425,7 @@ function loadLevel(respawn){
     else spawnEnemy(e.k,e.tx*T+T/2,e.ty*T)}
   for(const [cx,cy] of L.coins)PK.push({k:'coin',x:cx*T+T/2,y:cy*T+T/2,fixed:true});
   const sx=respawn&&G.cpHit?L.cp*T+T/2:3*T;
-  PL={x:sx,y:L.goalY*T,vx:0,vy:0,w:18,h:28,face:1,ground:true,coyote:0,air:0,inv:respawn?1.5:0,st:'ok',fireT:0,anim:0,ride:null,dropT:0,squash:0};
+  PL={x:sx,y:L.goalY*T,vx:0,vy:0,w:18,h:30,face:1,ground:true,coyote:0,air:0,inv:respawn?1.5:0,st:'ok',fireT:0,anim:0,ride:null,dropT:0,squash:0};
   PL.y=groundBelow(sx);
   if(!G.demo){G.time=300;G.hurry=false;G.phase='run';G.pt=0;G.hearts=maxHearts();G.stomps=0;if(!respawn)G.cpHit=false;
     setMsg(`World ${lvlName(n)}`,2,theme().name)}
@@ -457,6 +457,7 @@ function useItem(i){if(G.demo||!(G.state==='play'||G.state==='inv'))return;i=i==
 function ammoGive(w){return Math.round(WPN[w].give*(1+.5*lv('pouch')))}
 function fire(){const p=PL,w=G.wpn,f=p.face,x=p.x+f*12,y=p.y-17;
   if(WPN[w].ammo&&G.ammo[w]<=0){sfx.nope();floatText(p.x,p.y-40,'Out of '+(w==='wand'?'charges':'bombs'),'#ff9db6');const own=WORDER.filter(k=>G.owned[k]&&(!WPN[k].ammo||G.ammo[k]>0));G.wpn=own.includes('boom')?'boom':'sling';p.fireT=.3;return}
+  p.shotT=t;
   if(w==='sling'){const twin=lv('sling')>=3,dmg=lv('sling')>=2?2:1;PJ.push({k:'pebble',x,y,vx:f*430+p.vx*.3,vy:-110,life:1,dmg,r:4});if(twin)PJ.push({k:'pebble',x,y:y+2,vx:f*400+p.vx*.3,vy:-230,life:1,dmg,r:4});p.fireT=lv('sling')>=1?.22:.32;sfx.sling()}
   else if(w==='boom'){if(PJ.some(q=>q.k==='boom')){p.fireT=.05;return}PJ.push({k:'boom',x,y,vx:f*460,vy:0,life:3,dmg:1,r:9,out:.42,hit:new Set(),a:0});p.fireT=.2;sfx.boom()}
   else if(w==='wand'){G.ammo.wand--;PJ.push({k:'fire',x,y,vx:f*300,vy:60,life:2.2,dmg:2,r:6,b:0});p.fireT=.26;sfx.fire()}
@@ -988,7 +989,7 @@ function drawProj(q){ctx.save();ctx.translate(q.x,q.y);
     const g=ctx.createRadialGradient(0,0,1,0,0,8);g.addColorStop(0,'#ffe6a0');g.addColorStop(.5,'#ff6a1a');g.addColorStop(1,'rgba(200,40,10,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,8,0,TAU);ctx.fill()}
   ctx.restore()}
 // Pip, a steelworker: dented hard hat, welding goggles, red bandana, canvas work jacket with a hi-vis band, tool belt, steel-toe boots
-function drawPlayer(p){if(p.inv>0&&p.st==='ok'&&Math.floor(p.inv*14)%2)return;const x=p.x,y=p.y,f=p.face,air=!p.ground&&p.st==='ok';
+function drawPlayer(p){if(sprOK){drawPlayerSprite(p);return}if(p.inv>0&&p.st==='ok'&&Math.floor(p.inv*14)%2)return;const x=p.x,y=p.y,f=p.face,air=!p.ground&&p.st==='ok';
   ctx.save();ctx.translate(x,y);if(p.st==='dead'){ctx.rotate(Math.min(G.pt*6,Math.PI))}
   const sq=p.squash*.12;ctx.scale(f*(1+sq)*.8,(1-sq)*.8);ctx.lineJoin='round';ctx.lineCap='round';
   const pep=G.fx&&G.fx.pepper>0;if(pep){const g=ctx.createRadialGradient(0,-16,4,0,-16,24);g.addColorStop(0,`rgba(255,140,40,${.45+.2*Math.sin(t*20)})`);g.addColorStop(1,'rgba(255,80,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,-16,24,0,TAU);ctx.fill()}
@@ -1023,6 +1024,24 @@ function drawPlayer(p){if(p.inv>0&&p.st==='ok'&&Math.floor(p.inv*14)%2)return;co
   ctx.restore();
   if(G.fx&&G.fx.shield>0){ctx.strokeStyle=`rgba(159,240,255,${.6+.3*Math.sin(t*8)})`;ctx.lineWidth=2;ctx.fillStyle='rgba(159,240,255,.12)';ctx.beginPath();ctx.arc(x,y-18,24,0,TAU);ctx.fill();ctx.stroke()}
   if(G.fx&&G.fx.feather>0&&!p.ground){ctx.fillStyle='rgba(255,255,255,.75)';ctx.beginPath();ctx.ellipse(x-f*12,y-20,10,4,f*.5,0,TAU);ctx.fill()}}
+// Pip from the painted sheet: idle, 4-frame run, jump, fall, throw, hurt, knocked out
+function drawPlayerSprite(p){const x=p.x,y=p.y,f=p.face,k=38/130;
+  if(p.inv>0&&p.st==='ok'&&p.inv<1.2&&Math.floor(p.inv*14)%2)return;
+  let fr;
+  if(p.st==='dead')fr=p.why==='fall'?'pf':G.pt<.35?'ph':'pd';
+  else if(p.st==='goal')fr=p.y<L.goalY*T-1?'pj':Math.abs(p.x-(L.goal*T+T/2-8))>2?'pr'+(Math.floor(p.anim*.8)%4):'p0';
+  else if(p.inv>1.2)fr='ph';
+  else if(!G.demo&&p.shotT!=null&&t-p.shotT<.18)fr='ps';
+  else if(!p.ground)fr=p.vy<60?'pj':'pf';
+  else if(Math.abs(p.vx)>10)fr='pr'+(Math.floor(p.anim*.8)%4);
+  else fr='p0';
+  ctx.save();ctx.translate(x,y);
+  const pep=G.fx&&G.fx.pepper>0;if(pep){const g=ctx.createRadialGradient(0,-18,4,0,-18,28);g.addColorStop(0,`rgba(255,140,40,${.45+.2*Math.sin(t*20)})`);g.addColorStop(1,'rgba(255,80,20,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,-18,28,0,TAU);ctx.fill()}
+  const sq=p.squash*.1,breathe=fr==='p0'?1+Math.sin(t*3)*.012:1;ctx.scale(f*(1+sq),(1-sq)*breathe);
+  if(p.st==='dead'&&fr==='pd')ctx.translate(0,0);
+  spr(fr,k);ctx.restore();
+  if(G.fx&&G.fx.shield>0){ctx.strokeStyle=`rgba(159,240,255,${.6+.3*Math.sin(t*8)})`;ctx.lineWidth=2;ctx.fillStyle='rgba(159,240,255,.12)';ctx.beginPath();ctx.arc(x,y-19,26,0,TAU);ctx.fill();ctx.stroke()}
+  if(G.fx&&G.fx.feather>0&&!p.ground){ctx.fillStyle='rgba(255,255,255,.75)';ctx.beginPath();ctx.ellipse(x-f*13,y-22,10,4,f*.5,0,TAU);ctx.fill()}}
 function drawFx(){for(const f of FX){const a=clamp(f.life/.35,0,1);ctx.globalAlpha=a;
     if(f.k==='bit'){ctx.fillStyle=f.c;ctx.fillRect(f.x-5,f.y-5,10,10)}
     else if(f.k==='gp'){ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,${180+Math.random()*60|0},70,1)`;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(.5+a*.5),0,TAU);ctx.fill();ctx.fillStyle='rgba(255,200,80,.35)';ctx.beginPath();ctx.arc(f.x,f.y,f.r*3,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over'}
