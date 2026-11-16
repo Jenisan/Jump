@@ -122,7 +122,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.24';
+const VERSION='0.25';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -304,7 +304,7 @@ let jumpQ=0;
 const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'up',ArrowDown:'down',KeyS:'down'};
 const JUMPK=new Set(['Space','KeyW','KeyZ','KeyK','ArrowUp']),FIREK=new Set(['KeyX','KeyJ','ShiftLeft','ShiftRight']);
 addEventListener('keydown',e=>{sfx.unlock();
-  if(e.code==='F12'&&e.shiftKey){e.preventDefault();keys.fire=false;if(G&&!G.demo&&G.owned)toggleCheat();return}
+  if(e.code==='F2'&&e.shiftKey){e.preventDefault();keys.fire=false;if(G&&!G.demo&&G.owned)toggleCheat();return}
   if(G.state==='play'){
     if(JUMPK.has(e.code)){if(!e.repeat)jumpQ=.14;keys.jump=true;e.preventDefault();if(e.code!=='ArrowUp')return}
     if(KEYMAP[e.code]){keys[KEYMAP[e.code]]=true;e.preventDefault();return}
@@ -472,7 +472,7 @@ function loadLevel(respawn){
 function groundBelow(x){const cx=Math.floor(x/T);for(let cy=0;cy<ROWS;cy++)if(isSolid(tile(cx,cy))&&!isSolid(tile(cx,cy-1)))if(cy*T>=(theme().ceil?3*T:0))return cy*T;return L.goalY*T}
 function spawnEnemy(k,x,y){const d=EDEF[k],n=G.n||0;EN.push({k,x,y,w:d.w,h:d.h,hp:d.hp+(n>=6&&k!=='bat'?1:0),vx:0,vy:0,face:-1,st:'ok',t:Math.random()*2,base:y,sp:d.sp*(1+.05*Math.min(10,n)),edge:Math.random()<.6||k==='spiky'||k==='zapper',awake:k!=='bat'&&k!=='lurker',zc:rand(1,2),zap:0,fireT:rand(1,2.2),hurt:0})}
 function setMsg(s,life=2,sub='',warn=false){msg=s?{t:s,life,max:life,sub,warn}:null}
-// Shift+F12: cheat mode — every weapon and piece of gear, ammo and fuel kept topped up
+// Shift+F2: cheat mode — every weapon and piece of gear, ammo and fuel kept topped up
 function applyCheat(quiet){if(!G||G.demo||!G.owned)return;WORDER.forEach(w=>G.owned[w]=true);GORDER.forEach(g=>G.gearOwned[g]=true);
   G.ammo.wand=Math.max(G.ammo.wand,99);G.ammo.bomb=Math.max(G.ammo.bomb,99);G.ammo.laser=Math.max(G.ammo.laser,999);G.fuel=FUEL_MAX;if(!quiet)setMsg('Cheat mode',2,'All weapons and gear in your inventory')}
 function toggleCheat(){CHEAT=!CHEAT;sfx.weapon();if(CHEAT)applyCheat();else setMsg('Cheat mode off',1.5);if(G.state==='inv'){G.state='play';inventory()}}
