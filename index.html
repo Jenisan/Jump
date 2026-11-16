@@ -122,7 +122,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.23';
+const VERSION='0.24';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -899,7 +899,6 @@ function drawTile(v,cx,cy){const th=theme(),x=cx*T,y=cy*T,bump=BUMP.get(cx+','+c
   if(tilesOK&&v!==7){const tc=th.tile,h=(cx*7+cy*13)%5;
     if(v===1){const top=!isSolid(tile(cx,cy-1))&&!(th.ceil&&cy<2);tdraw(top?tc.top:(h<2?tc.fill2:tc.fill),x,y);if(!top&&isSolid(tile(cx,cy-1))&&tile(cx,cy-1)!==1){}return}
     if(v===2){tdraw(h===0?tc.brick2:tc.brick,x,y+by);return}
-    if((v===3||v===4)&&anOK){const k=(T+3)/ANR.crate0[6],cw=ANR.crate0[7]*k,o=OPENED.get(cx+','+cy);anmK(ctx,v===3?((t*.7+cx*.37)%2.4<.25?'crate1':'crate0'):(o!=null&&t-o<.55?'crate2':'crate3'),x+T/2-cw/2,y+T+1+by,k);return}
     if(v===3){tdraw(TC.crate,x,y+by);const pul=.5+.5*Math.sin(t*5+cx);ctx.fillStyle='rgba(20,16,12,.55)';ctx.fillRect(x+9,y+by+8,14,17);ctx.fillStyle=`rgb(255,${150+pul*80|0},40)`;ctx.font='400 20px "Black Ops One","Arial Black",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',x+T/2,y+by+T/2+1);return}
     if(v===4){tdraw(TC.used,x,y+by);return}
     if(v===5){tdraw(tc.stone,x,y);return}
