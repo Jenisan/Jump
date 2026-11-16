@@ -119,7 +119,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.16';
+const VERSION='0.18';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -183,7 +183,7 @@ const THEMES=[
 // block tiles cut from the supplied block sheet (64 px cells in tiles.webp; last cell = plank strip)
 const BGIMG=new Image();let bgOK=false;BGIMG.onload=()=>bgOK=true;BGIMG.src='bg.jpg';   // supplied factory skyline, mirrored into a seamless strip
 // painted enemy sprites (sprites.webp): [x,y,w,h,anchorX,anchorY] in atlas pixels; anchor = feet (centre for tumbling frames)
-const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71],"dr0":[1251,0,130,168,65,104.2],"dr1":[1383,0,128,169,64,104.8],"drs":[1513,0,125,152,62.5,94.2],"saw":[1640,0,168,168,84,84]};
+const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71],"dr0":[1251,0,130,168,65,104.2],"dr1":[1383,0,128,169,64,104.8],"drs":[1513,0,125,152,62.5,94.2],"saw":[1640,0,168,168,84,84],"tu0":[1810,0,149,134,67,134],"tuc":[1961,0,148,141,67,141],"tuf":[2111,0,213,129,67,129],"tud":[2326,0,180,133,67,133],"tux":[2508,0,164,118,67,118],"crA":[2674,0,181,148,90.5,148],"crB":[2857,0,185,143,92.5,143],"rod":[3044,0,46,104,23,0],"flange":[3092,0,70,31,35,0],"csp":[3164,0,163,142,81.5,142],"czp":[3329,0,182,158,91,158],"cwr":[3513,0,171,138,85.5,138]};
 const SPIMG=new Image();let sprOK=false;SPIMG.onload=()=>sprOK=true;SPIMG.src='sprites.webp';
 function spr(n,k){const r=SPRR[n];ctx.drawImage(SPIMG,r[0],r[1],r[2],r[3],-r[4]*k,-r[5]*k,r[2]*k,r[3]*k)}
 const TIMG=new Image();let tilesOK=false;TIMG.onload=()=>tilesOK=true;TIMG.src='tiles.webp';
@@ -204,7 +204,7 @@ function genLevel(n,seed,thi,demo){
   const coin=(cx,cy)=>{if(cy>=(th.ceil?3:1)&&!get(cx,cy))coins.push([cx,cy])};
   const coinRow=(x0,len,cy)=>{for(let i=0;i<len;i++)coin(x0+i,cy)};
   const coinArc=(x0,len,cy)=>{for(let i=0;i<len;i++)coin(x0+i,cy-Math.round(Math.sin(Math.PI*i/Math.max(1,len-1))*2))};
-  const pool=['beetle','beetle'].concat(d>=1?['hopper']:[],d>=2?['bat','burr']:[],d>=4?['beetle','hopper','burr']:[]);
+  const pool=['beetle','beetle'].concat(d>=1?['hopper','lurker']:[],d>=2?['bat','burr','zapper']:[],d>=3?['spiky']:[],d>=4?['beetle','hopper','burr','zapper','spiky']:[]);
   const enemy=(k,tx,ty)=>ents.push({k,tx,ty});
   const enemiesOn=(x0,len,top,cnt)=>{for(let i=0;i<cnt;i++){const ex=x0+ri(0,Math.max(0,len-1));if(get(ex,top-1)===7||ex<14)continue;const k=pool[ri(0,pool.length-1)];enemy(k,ex,k==='bat'?top-ri(3,4):top)}};
   const ceil=th.ceil?2:0;
@@ -258,7 +258,10 @@ const EDEF={
   hopper:{w:24,h:22,hp:1,sp:0,stomp:true,pts:150},
   bat:{w:26,h:18,hp:1,sp:0,stomp:true,pts:150},
   burr:{w:24,h:24,hp:2,sp:30,stomp:false,pts:200},
-  sentry:{w:26,h:28,hp:3,sp:0,stomp:true,pts:250}};
+  sentry:{w:26,h:28,hp:3,sp:0,stomp:true,pts:250},
+  spiky:{w:28,h:26,hp:2,sp:34,stomp:false,pts:250},    // spiked crawler: shoot it
+  zapper:{w:28,h:24,hp:1,sp:62,stomp:true,pts:200},    // shorted-out crawler: fast, throws a shock every couple of seconds
+  lurker:{w:30,h:18,hp:1,sp:80,stomp:true,pts:200}};   // wrecked crawler: a scrap pile that springs up when you pass
 
 /* ---------- Input ---------- */
 const keys={left:false,right:false,up:false,down:false,jump:false,fire:false},tkeys={left:false,right:false,down:false,jump:false,fire:false};
@@ -418,7 +421,7 @@ function loadLevel(respawn){
   EN=[];PJ=[];PK=[];FX=[];FLOAT=[];MP=[];CR=[];BUMP=new Map();
   for(const e of L.ents){
     if(e.k==='mplat')MP.push({x:e.x0,y:e.ty*T,w:e.w*T,x0:e.x0,x1:e.x1,sp:e.sp,dir:1,dx:0});
-    else if(e.k==='crush'){const top=theme().ceil?3*T:T;CR.push({x:e.tx*T+T,y0:top,y:top,w:2*T-6,h:42,st:'wait',t:0})}
+    else if(e.k==='crush'){const top=theme().ceil?3*T:T;CR.push({x:e.tx*T+T,y0:top,y:top,w:2*T-6,h:44,st:'wait',t:0})}
     else spawnEnemy(e.k,e.tx*T+T/2,e.ty*T)}
   for(const [cx,cy] of L.coins)PK.push({k:'coin',x:cx*T+T/2,y:cy*T+T/2,fixed:true});
   const sx=respawn&&G.cpHit?L.cp*T+T/2:3*T;
@@ -428,7 +431,7 @@ function loadLevel(respawn){
     setMsg(`World ${lvlName(n)}`,2,theme().name)}
   camX=clamp(PL.x-VIEWW*.35,0,Math.max(0,L.w*T-VIEWW))}
 function groundBelow(x){const cx=Math.floor(x/T);for(let cy=0;cy<ROWS;cy++)if(isSolid(tile(cx,cy))&&!isSolid(tile(cx,cy-1)))if(cy*T>=(theme().ceil?3*T:0))return cy*T;return L.goalY*T}
-function spawnEnemy(k,x,y){const d=EDEF[k],n=G.n||0;EN.push({k,x,y,w:d.w,h:d.h,hp:d.hp+(n>=6&&k!=='bat'?1:0),vx:0,vy:0,face:-1,st:'ok',t:Math.random()*2,base:y,sp:d.sp*(1+.05*Math.min(10,n)),edge:Math.random()<.6,awake:k!=='bat',fireT:rand(1,2.2),hurt:0})}
+function spawnEnemy(k,x,y){const d=EDEF[k],n=G.n||0;EN.push({k,x,y,w:d.w,h:d.h,hp:d.hp+(n>=6&&k!=='bat'?1:0),vx:0,vy:0,face:-1,st:'ok',t:Math.random()*2,base:y,sp:d.sp*(1+.05*Math.min(10,n)),edge:Math.random()<.6||k==='spiky'||k==='zapper',awake:k!=='bat'&&k!=='lurker',zc:rand(1,2),zap:0,fireT:rand(1,2.2),hurt:0})}
 function setMsg(s,life=2,sub='',warn=false){msg=s?{t:s,life,max:life,sub,warn}:null}
 function floatText(x,y,s,c='#fff'){FLOAT.push({x,y,s,c,life:1})}
 function addScore(n,x,y){if(G.demo)return;G.score+=n;if(x!=null)floatText(x,y,String(n));
@@ -503,7 +506,12 @@ function updateEnemies(dt){const p=PL,vx0=camX-120,vx1=camX+VIEWW+160;
     if(e.st==='flip'){e.t+=dt;e.vy+=1400*dt;e.x+=e.vx*dt;e.y+=e.vy*dt;continue}
     if(e.x<vx0||e.x>vx1)continue;   // enemies wait off-screen until you get near
     e.t+=dt;e.hurt=Math.max(0,e.hurt-dt);
-    if(e.k==='beetle'||e.k==='burr'){if(!e.vx)e.vx=-e.sp;e.vy=Math.min(900,e.vy+1600*dt);
+    if(e.k==='lurker'&&!e.awake){e.vy=Math.min(900,e.vy+1600*dt);const r=moveBody(e,0,e.vy*dt,true);if(r.land)e.vy=0;
+      if(Math.abs(p.x-e.x)<110&&Math.abs(p.y-e.y)<90&&p.st==='ok'){e.awake=true;e.h=24;e.y-=1;e.vy=-300;e.face=sgn(p.x-e.x)||-1;e.vx=e.face*e.sp;e.edge=true;if(!G.demo)sfx.crate();FX.push({k:'puff',x:e.x,y:e.y,life:.35})}
+      continue}
+    if(e.k==='zapper'){e.zc-=dt;e.zap=Math.max(0,e.zap-dt);if(e.zc<=0){e.zap=.6;e.zc=rand(1.8,2.6);if(!G.demo&&Math.abs(e.x-p.x)<VIEWW*.6)sfx.shield()}
+      if(e.zap>0&&Math.random()<.6)FX.push({k:'gp',x:e.x+rand(-14,14),y:e.y-rand(4,22),vx:rand(-120,120),vy:-rand(40,160),life:rand(.15,.3),r:rand(.8,1.6)})}
+    if(e.k==='beetle'||e.k==='burr'||e.k==='spiky'||e.k==='zapper'||e.k==='lurker'){if(!e.vx)e.vx=-e.sp;e.vy=Math.min(900,e.vy+1600*dt);
       const r=moveBody(e,e.vx*dt,e.vy*dt,true);if(r.land)e.vy=0;if(r.wall){e.vx=-r.wall*e.sp}
       if(r.land&&e.edge){const ax=e.x+sgn(e.vx)*(e.w/2+2),cy=Math.floor(e.y/T);if(!isSolid(tile(Math.floor(ax/T),cy))&&tile(Math.floor(ax/T),cy)!==6)e.vx=-e.vx}
       if(r.land&&tile(Math.floor(e.x/T),Math.floor((e.y-4)/T))===7)e.vx=-e.vx;
@@ -512,7 +520,7 @@ function updateEnemies(dt){const p=PL,vx0=camX-120,vx1=camX+VIEWW+160;
       if(r.land){e.vy=0;e.vx=0;e.fireT-=dt;if(e.fireT<=0&&Math.abs(p.x-e.x)<340){e.fireT=rand(1,1.6);e.face=sgn(p.x-e.x)||-1;e.vx=e.face*rand(80,120);e.vy=-rand(380,470)}}}
     else if(e.k==='bat'){if(!e.awake&&Math.abs(p.x-e.x)<230)e.awake=true;
       if(e.awake){e.face=sgn(p.x-e.x)||1;e.x+=e.face*72*dt;e.y=e.base+Math.sin(e.t*3)*34+clamp((p.y-30-e.base)*.4,-40,60)}}
-    else if(e.k==='sentry'){e.face=sgn(p.x-e.x)||-1;e.fireT-=dt;if(e.fireT<=0&&Math.abs(p.x-e.x)<VIEWW*.7){e.fireT=Math.max(1.4,2.4-.08*G.n);PJ.push({k:'seed',x:e.x+e.face*14,y:e.y-18,vx:e.face*170,vy:0,life:4,r:5,foe:true});sfx.shoot()}}
+    else if(e.k==='sentry'){e.face=sgn(p.x-e.x)||-1;e.fireT-=dt;if(e.fireT<=0&&Math.abs(p.x-e.x)<VIEWW*.7){e.fireT=Math.max(1.4,2.4-.08*G.n);PJ.push({k:'seed',x:e.x+e.face*22,y:e.y-15,vx:e.face*170,vy:0,life:4,r:5,foe:true});e.shot=t;sfx.shoot()}}
     if(e.y>WH+60)e.st='gone'}
   EN=EN.filter(e=>e.st!=='gone'&&!(e.st==='squash'&&e.t>.45)&&!(e.st==='flip'&&e.y>WH+80))}
 function updateCrushers(dt){for(const c of CR){c.t+=dt;const cx=Math.floor(c.x/T);
@@ -626,15 +634,18 @@ function updatePlayer(dt){const p=PL,I=G.demo?demoInput():IN();
   const fy=Math.floor((p.y-3)/T);for(const cx of [Math.floor((p.x-p.w/2+3)/T),Math.floor((p.x+p.w/2-3)/T)])if(tile(cx,fy)===7&&p.y-fy*T>14){if(G.fx.pepper>0||G.demo){}else{hurt();if(p.st==='ok'){p.vy=-420;p.ground=false}}break}
   if(p.y>WH+50){die('fall');return}
   // enemies: stomp from above, or get hurt
+  for(const e of EN)if(e.k==='zapper'&&e.st==='ok'&&e.zap>0&&!G.demo&&Math.hypot(p.x-e.x,p.y-14-(e.y-12))<40)hurt();
   for(const e of EN){if(e.st!=='ok'||!overlap(p,e))continue;
     const d=EDEF[e.k];
+    if(e.k==='lurker'&&!e.awake){if(p.vy>0&&prevY<=e.y-e.h+8){e.hp=0;killEnemy(e,false,'stomp');sfx.stomp();p.vy=I.J?-520:-330}continue}
+    if(e.k==='zapper'&&e.zap>0&&!(G.fx&&G.fx.pepper>0)){if(G.demo){killEnemy(e,true,'demo');continue}hurt();continue}
     if(G.fx&&G.fx.pepper>0){killEnemy(e,true);continue}
     if(d.stomp&&p.vy>0&&prevY<=e.y-e.h+8){G.stomps++;e.hp=0;killEnemy(e,false,'stomp');const bonus=[0,0,100,300,700][Math.min(4,G.stomps-1)]||1000;if(bonus)addScore(bonus,e.x,e.y-e.h-14);sfx.stomp();p.vy=I.J?-520:-330;p.air=airJumps();continue}
     if(G.demo){killEnemy(e,true,'demo');continue}
     hurt()}
   for(const c of CR)if(c.st!=='wait'&&Math.abs(p.x-c.x)<(p.w+c.w)/2&&p.y-p.h<c.y+c.h+6&&p.y>c.y){
     if(c.st==='fall'){if(G.fx&&G.fx.pepper>0){p.x=c.x+sgn(p.x-c.x||1)*((p.w+c.w)/2+1);continue}if(p.ground&&!G.demo){die('crush');return}hurt();p.vx=sgn(p.x-c.x||1)*220;continue}
-    if(p.y<=c.y+4&&p.vy>=0){p.y=c.y;p.vy=0;p.ground=true;continue}   // you can stand on a resting crusher
+    if(c.st==='rest'&&p.y<=c.y+4&&p.vy>=0){p.y=c.y;p.vy=0;p.ground=true;continue}   // you can stand on a crusher while it rests (not while it rises back to the ceiling)
     p.x=c.x+sgn(p.x-c.x||1)*((p.w+c.w)/2+.5);p.vx=0}
   // checkpoint and goal
   if(!G.demo&&!G.cpHit&&p.x>=L.cp*T){G.cpHit=true;sfx.item();floatText(L.cp*T+T/2,L.goalY*T-90,'Checkpoint','#9ff0ff')}
@@ -659,7 +670,8 @@ function update(dt){
   if(!L)return;
   for(const m of MP){const ox=m.x;m.x+=m.dir*m.sp*dt;if(m.x>m.x1){m.x=m.x1;m.dir=-1}if(m.x<m.x0){m.x=m.x0;m.dir=1}m.dx=m.x-ox}
   for(const [k,v] of BUMP){const nv=v-dt;if(nv<=0)BUMP.delete(k);else BUMP.set(k,nv)}
-  if(G.demo){updatePlayer(dt);if(PL.st==='dead'){G.pt+=dt;if(G.pt>1.6||PL.y>WH+200)loadDemo()}updateEnemies(dt);updateCrushers(dt);updateProjectiles(dt);updatePickups(dt);updateCam(dt);return}
+  if(G.demo){if(PL.x>(G.dmx||0)+16){G.dmx=PL.x;G.dmt=0}else if((G.dmt=(G.dmt||0)+dt)>8){loadDemo();return}   // attract mode: restart if the pilot stops making progress
+    updatePlayer(dt);if(PL.st==='dead'){G.pt+=dt;if(G.pt>1.6||PL.y>WH+200)loadDemo()}updateEnemies(dt);updateCrushers(dt);updateProjectiles(dt);updatePickups(dt);updateCam(dt);return}
   if(G.phase==='dying'){G.pt+=dt;updatePlayer(dt);if(G.pt>2.4)loseLife();return}
   if(G.phase==='run'){
     for(const k in G.fx)G.fx[k]=Math.max(0,G.fx[k]-dt);
@@ -861,7 +873,14 @@ function drawBeacon(){const x=L.goal*T+T/2,gy=L.goalY*T,top=gy-9*T;
 function drawMover(m){shape(lg(m.y,m.y+12,'#8a8078','#4a433e'),()=>{ctx.rect(m.x,m.y,m.w,11)});ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(m.x,m.y,m.w,2);
   ctx.save();ctx.beginPath();ctx.rect(m.x,m.y+7,m.w,4);ctx.clip();ctx.fillStyle='#d8a21a';ctx.fillRect(m.x,m.y+7,m.w,4);ctx.fillStyle='#1a1410';for(let i=-1;i<m.w/8;i++){ctx.beginPath();ctx.moveTo(m.x+i*8,m.y+11);ctx.lineTo(m.x+i*8+4,m.y+7);ctx.lineTo(m.x+i*8+8,m.y+7);ctx.lineTo(m.x+i*8+4,m.y+11);ctx.fill()}ctx.restore();
   rivet(m.x+5,m.y+4);rivet(m.x+m.w-5,m.y+4)}
-function drawCrusher(c){const x=c.x-c.w/2,y=c.y;
+function drawCrusher(c){if(sprOK){// painted hydraulic press: ceiling flange, segmented chrome rod, head (red slot idle, orange glow when slamming)
+    const k=64/181,top=theme().ceil?2*T:0,hy=c.y+c.h+8;ctx.save();ctx.translate(c.x,0);
+    const R=SPRR.rod,rh=R[3]*k,rw=R[2]*k,headTop=hy-SPRR.crA[3]*k+4;
+    ctx.save();ctx.beginPath();ctx.rect(-rw,top,rw*2,headTop-top+2);ctx.clip();for(let ry=top+6;ry<headTop+2;ry+=rh)ctx.drawImage(SPIMG,R[0],R[1],R[2],R[3],-rw/2,ry,rw,rh);ctx.restore();
+    const F=SPRR.flange;ctx.drawImage(SPIMG,F[0],F[1],F[2],F[3],-F[2]*k*.65,top-2,F[2]*k*1.3,F[3]*k*1.1);
+    const hot=c.st==='fall'||c.st==='rest';ctx.translate(0,hy);spr(hot?'crB':'crA',k);ctx.restore();
+    if(hot){ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(c.x,hy-30,2,c.x,hy-30,40);g.addColorStop(0,'rgba(255,110,40,.45)');g.addColorStop(1,'rgba(255,60,20,0)');ctx.fillStyle=g;ctx.fillRect(c.x-40,hy-70,80,80);ctx.globalCompositeOperation='source-over'}
+    return}const x=c.x-c.w/2,y=c.y;
   // hydraulic ram: chrome rod down from the ceiling, rusted press head with hazard stripes and steel teeth
   ctx.fillStyle=lg(0,1,'#9aa0a6','#9aa0a6');const rg=ctx.createLinearGradient(c.x-6,0,c.x+6,0);rg.addColorStop(0,'#5f646a');rg.addColorStop(.4,'#d9dde1');rg.addColorStop(1,'#4a4e53');ctx.fillStyle=rg;ctx.fillRect(c.x-6,c.y0-T*3,12,y-c.y0+T*3);
   shape(lg(y,y+c.h,'#6b5a4e','#3a2f28'),()=>{rr(ctx,x,y,c.w,c.h,4)});rust(x,y,c.w,c.h,c.x|0);
@@ -882,12 +901,30 @@ function drawPick(k){const bob=k.fixed?Math.sin(t*4+k.x*.05)*2:0,x=k.x,y=k.fixed
   const g2=ctx.createRadialGradient(x,y,2,x,y,17);g2.addColorStop(0,'rgba(255,170,80,.45)');g2.addColorStop(1,'rgba(255,120,40,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x,y,17+Math.sin(t*6)*1.5,0,TAU);ctx.fill();
   if(k.k==='heart'){if(!uiPic(ctx,'heart',x-11,y-10,22))drawIcon(ctx,'heart','',x-10,y-10,20)}else drawIcon(ctx,k.k==='item'?'i':k.k==='weapon'?'w':'a',k.id,x-11,y-11,22)}
 function drawEnemy(e){const x=e.x,y=e.y,f=e.face||-1;
+  if((e.k==='spiky'||e.k==='zapper'||e.k==='lurker')&&sprOK){// painted crawler variants (single frames, bobbed as they walk)
+    ctx.save();ctx.translate(x,y);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);
+    if(e.st==='flip'){ctx.translate(0,-10);ctx.rotate(Math.sin(e.t*6)*.5);spr('cwr',40/171)}
+    else if(e.st==='squash'){ctx.scale(f*1.15,.45);ctx.globalAlpha=clamp(1-(e.t-.2)/.25,0,1);spr(e.k==='lurker'?'cw0':e.k==='zapper'?'czp':'csp',e.k==='zapper'?42/182:40/163)}
+    else if(e.k==='lurker'&&!e.awake){spr('cwr',40/171);if(Math.floor(t*1.3+e.x)%4===0){ctx.fillStyle='rgba(255,60,30,.8)';ctx.beginPath();ctx.arc(8,-6,1.3,0,TAU);ctx.fill()}}
+    else{const bob=-Math.abs(Math.sin(e.t*(e.k==='zapper'?18:13)))*1.6;ctx.scale(f,1);ctx.translate(0,bob);ctx.rotate(Math.sin(e.t*13)*.03);
+      if(e.k==='lurker')spr('cw'+(Math.floor(e.t*11)%5),36/168);else if(e.k==='spiky')spr('csp',40/163);else spr('czp',42/182);
+      if(e.k==='zapper'&&e.zap>0){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(140,220,255,${.5+.5*Math.random()})`;ctx.lineWidth=1.6;
+        for(let i=0;i<4;i++){ctx.beginPath();let a=rand(0,TAU),r=8;ctx.moveTo(Math.cos(a)*r,-12+Math.sin(a)*r);for(let j=0;j<5;j++){r+=6;a+=rand(-.5,.5);ctx.lineTo(Math.cos(a)*r,-12+Math.sin(a)*r)}ctx.stroke()}
+        const g=ctx.createRadialGradient(0,-12,4,0,-12,40);g.addColorStop(0,'rgba(120,200,255,.35)');g.addColorStop(1,'rgba(120,200,255,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,-12,40,0,TAU);ctx.fill();ctx.globalCompositeOperation='source-over'}}
+    ctx.restore();return}
   if(e.k==='beetle'&&sprOK){// painted scrap crawler: 5-frame walk, squashed, knocked over
     ctx.save();ctx.translate(x,y);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);const k=36/168;
     if(e.st==='squash'){ctx.scale(f,1);ctx.globalAlpha=clamp(1-(e.t-.25)/.2,0,1);spr('csq',k)}
     else if(e.st==='flip'){ctx.translate(0,-12);ctx.rotate(Math.sin(e.t*6)*.4);spr('cfl',k)}
     else{ctx.scale(f,1);spr('cw'+(Math.floor(e.t*9)%5),k)}
     ctx.restore();return}
+  if(e.k==='sentry'&&sprOK){// painted steam turret: idle, charging (vent glows), firing flash, damaged, wrecked
+    ctx.save();ctx.translate(x,y);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);const k=40/149;ctx.scale(f,1);
+    if(e.st==='flip'){ctx.translate(0,-4);ctx.rotate(Math.min(e.t*3,1.2));spr('tux',k)}
+    else{const fr=e.shot!=null&&t-e.shot<.14?'tuf':e.hp<=1&&EDEF.sentry.hp>1?'tud':e.fireT<.45?'tuc':'tu0';spr(fr,k)}
+    ctx.restore();
+    if(e.st==='ok'&&Math.random()<.015)FX.push({k:'puff',x:e.x-f*8,y:e.y-38,life:.35});
+    return}
   if(e.k==='burr'&&sprOK){// painted sawblade: one disc, spun as it rolls
     ctx.save();ctx.translate(x,y-13);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);const k=32/168;
     if(e.st==='flip'){ctx.rotate(e.t*5);ctx.globalAlpha=clamp(1-e.t/.9,0,1)}else ctx.rotate(e.x/15+t*4*(e.face||1));
@@ -907,7 +944,7 @@ function drawEnemy(e){const x=e.x,y=e.y,f=e.face||-1;
   if(e.st==='squash')ctx.scale(1.2,.35);
   if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);
   ctx.lineJoin='round';
-  if(e.k==='beetle'){// scrap crawler: riveted rust shell on steel legs, one red eye
+  if(e.k==='beetle'||e.k==='spiky'||e.k==='zapper'||e.k==='lurker'){// scrap crawler: riveted rust shell on steel legs, one red eye
     ctx.scale(-f,1);const w=Math.sin(e.t*14);ctx.strokeStyle='#2a2522';ctx.lineWidth=2.4;ctx.lineCap='round';
     for(let i=0;i<3;i++){const lx=-8+i*7,ph=(i%2?w:-w)*3;ctx.beginPath();ctx.moveTo(lx,-6);ctx.lineTo(lx-3+ph,-3);ctx.lineTo(lx-4+ph,0);ctx.stroke()}
     ctx.strokeStyle='#7d7570';ctx.lineWidth=1;for(let i=0;i<3;i++){const lx=-8+i*7,ph=(i%2?w:-w)*3;ctx.beginPath();ctx.moveTo(lx,-6);ctx.lineTo(lx-3+ph,-3);ctx.stroke()}
@@ -1057,7 +1094,7 @@ function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;if((COARSE&
   sfx.music(musicLevel());draw();requestAnimationFrame(frame)}
 try{document.fonts.load('400 24px "Black Ops One"');document.fonts.load('700 16px Oswald');document.fonts.load('400 24px "Lilita One"');document.fonts.load('900 16px Nunito')}catch(e){}
 resize();titleScreen();requestAnimationFrame(frame);
-window.__jump={update,loadDemo,genLevel,cam:()=>camX,G:()=>G,P:()=>P,PL:()=>PL,EN:()=>EN,L:()=>L,PK:()=>PK,startRun,loadLevel,startGoal,die,inventory,useItem};
+window.__jump={CR:()=>CR,update,loadDemo,genLevel,cam:()=>camX,G:()=>G,P:()=>P,PL:()=>PL,EN:()=>EN,L:()=>L,PK:()=>PK,startRun,loadLevel,startGoal,die,inventory,useItem};
 </script>
 </body>
 </html>
