@@ -119,7 +119,7 @@ body.padmode .kb{display:none} body:not(.padmode) .gp{display:none}
    and a bag of items. Coins are banked when the run ends and spent in
    the Workshop.
    ===================================================================== */
-const VERSION='0.13';
+const VERSION='0.14';
 const IN_ARCADE=/^\/jump(\/|$)/.test(location.pathname);   // served inside the Arcade hub at arcade.jenisan.com/jump/
 const ARCADE_URL=IN_ARCADE?'/':'https://arcade.jenisan.com/';
 const SAVE='jump.save',SETK='jump.settings';
@@ -182,6 +182,10 @@ const THEMES=[
   {id:'sky',name:'The Foundry',sky:['#2a120c','#6e2812','#e2652a'],far:'#3b1f17',farDk:'#2b1510',near:'#24120d',nearDk:'#170b08',smoke:'#4a2f26',sun:'rgba(255,190,90,.7)',top:'#9aa0a6',topHi:'#c9ced3',dirt:'#6b4a36',dirtDk:'#4a3122',brick:'#8e3c26',brickDk:'#5a2416',stone:'#8f8a86',stoneDk:'#55504c',plank:'#8a7f78',plankDk:'#4f4844',ceil:false,tile:{top:11,fill:12,fill2:13,brick:14,brick2:14,stone:15}}];
 // block tiles cut from the supplied block sheet (64 px cells in tiles.webp; last cell = plank strip)
 const BGIMG=new Image();let bgOK=false;BGIMG.onload=()=>bgOK=true;BGIMG.src='bg.jpg';   // supplied factory skyline, mirrored into a seamless strip
+// painted enemy sprites (sprites.webp): [x,y,w,h,anchorX,anchorY] in atlas pixels; anchor = feet (centre for tumbling frames)
+const SPRR={"cw0":[0,0,169,114,84.5,114],"cw1":[171,0,157,124,78.5,124],"cw2":[330,0,166,124,83,124],"cw3":[498,0,158,113,79,113],"cw4":[658,0,167,119,83.5,119],"csq":[827,0,241,92,120.5,92],"cfl":[1070,0,177,142,88.5,71]};
+const SPIMG=new Image();let sprOK=false;SPIMG.onload=()=>sprOK=true;SPIMG.src='sprites.webp';
+function spr(n,k){const r=SPRR[n];ctx.drawImage(SPIMG,r[0],r[1],r[2],r[3],-r[4]*k,-r[5]*k,r[2]*k,r[3]*k)}
 const TIMG=new Image();let tilesOK=false;TIMG.onload=()=>tilesOK=true;TIMG.src='tiles.webp';
 const TC={crate:16,used:17,grate:18,vent:19,plank:20};
 const tdraw=(i,x,y,w=T+.6,h=T+.6,sh=64)=>ctx.drawImage(TIMG,i*64,0,64,sh,x,y,w,h);
@@ -250,7 +254,7 @@ const setT=(cx,cy,v)=>{if(cx>=0&&cx<L.w&&cy>=0&&cy<ROWS)L.t[cy*L.w+cx]=v};
 const theme=()=>THEMES[L?L.th:0];
 const lvlName=n=>`${Math.floor(n/3)%3+1+3*Math.floor(n/9)}-${n%3+1}`;
 const EDEF={
-  beetle:{w:24,h:20,hp:1,sp:40,stomp:true,pts:100},
+  beetle:{w:28,h:24,hp:1,sp:40,stomp:true,pts:100},
   hopper:{w:24,h:22,hp:1,sp:0,stomp:true,pts:150},
   bat:{w:26,h:18,hp:1,sp:0,stomp:true,pts:150},
   burr:{w:24,h:24,hp:2,sp:30,stomp:false,pts:200},
@@ -877,7 +881,14 @@ function drawPick(k){const bob=k.fixed?Math.sin(t*4+k.x*.05)*2:0,x=k.x,y=k.fixed
     return}
   const g2=ctx.createRadialGradient(x,y,2,x,y,17);g2.addColorStop(0,'rgba(255,170,80,.45)');g2.addColorStop(1,'rgba(255,120,40,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x,y,17+Math.sin(t*6)*1.5,0,TAU);ctx.fill();
   if(k.k==='heart'){if(!uiPic(ctx,'heart',x-11,y-10,22))drawIcon(ctx,'heart','',x-10,y-10,20)}else drawIcon(ctx,k.k==='item'?'i':k.k==='weapon'?'w':'a',k.id,x-11,y-11,22)}
-function drawEnemy(e){const x=e.x,y=e.y,f=e.face||-1;ctx.save();ctx.translate(x,y);
+function drawEnemy(e){const x=e.x,y=e.y,f=e.face||-1;
+  if(e.k==='beetle'&&sprOK){// painted scrap crawler: 5-frame walk, squashed, knocked over
+    ctx.save();ctx.translate(x,y);if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);const k=36/168;
+    if(e.st==='squash'){ctx.scale(f,1);ctx.globalAlpha=clamp(1-(e.t-.25)/.2,0,1);spr('csq',k)}
+    else if(e.st==='flip'){ctx.translate(0,-12);ctx.rotate(Math.sin(e.t*6)*.4);spr('cfl',k)}
+    else{ctx.scale(f,1);spr('cw'+(Math.floor(e.t*9)%5),k)}
+    ctx.restore();return}
+  ctx.save();ctx.translate(x,y);
   if(e.st==='flip'){ctx.rotate(e.t*8);ctx.scale(1,-1);ctx.translate(0,e.h/2)}
   if(e.st==='squash')ctx.scale(1.2,.35);
   if(e.hurt>0)ctx.globalAlpha=.5+.5*Math.sin(t*60);
